@@ -10,26 +10,98 @@ namespace CSVParser.Example
     {
         static void Main(string[] args)
         {
-            Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
+            if (Thread.CurrentThread.CurrentCulture.Name == "pl-PL")
+            {
+                Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");   // pl-PL has comma as delimiter instead of dot
+            }
+            
+            Console.WriteLine("Hello World!");
+            
+            char decision = 'x';
+            while (decision != 'E' && decision != 'e')
+            {
+                Console.Write("\nWhat you gonna do? [(A)ddTickerNameToHoldings / (G)enerateCSVFileByDate / (E)xit] ");
+                decision = Console.ReadKey().KeyChar;
 
-            /*Console.WriteLine("Hello World!");
-            string newData = FilesManager.DownloadRemoteFile("https://stooq.pl/db/d/?d=20200603&t=d");
-            List<Holding> holdings = FilesManager.ParseCsvToObject<Holding>(newData);
+                switch (decision)
+                {
+                    case 'A':
+                        Console.Write("\nDo you want to download data from web? [Y/N] ");
+                        char download = Console.ReadKey().KeyChar;
+                        Console.WriteLine();
+                        AddTickerNameToHoldings(download == 'Y' || download == 'y');
+                        break;
+                    case 'G':
+                        GenerateCSVFileByDate();
+                        break;
+                }
+            }
+        }
 
-            string restData = FilesManager.DownloadRemoteFile("https://stooq.pl/db/l/?g=6", true);
-            List<TickerNameSystem> tickerNameSystems = FilesManager.ParseCsvToObject<TickerNameSystem>(restData, ' ', StringSplitOptions.RemoveEmptyEntries);
+        /// <summary>
+        /// Adds "Ticker name" from file to Holdings. If Holding has no name, will be removed.
+        /// </summary>
+        /// <param name="isDownloadingFromWeb">Should data be downloaded from web or get from local disc. 
+        /// (You may have to change date in holdingsData URL, because stooq.pl store only few files in this way!)</param>
+        private static void AddTickerNameToHoldings(bool isDownloadingFromWeb = true)
+        {
+            string holdingsData;
+            string tickersWithNames;
+
+            if (isDownloadingFromWeb)
+            {
+                holdingsData = FilesManager.DownloadRemoteFile("https://stooq.pl/db/d/?d=20200603&t=d");
+                tickersWithNames = FilesManager.DownloadRemoteFile("https://stooq.pl/db/l/?g=6", true);
+            }
+            else
+            {
+                holdingsData = File.ReadAllText(@"C:\temp\20200727_d.txt");
+                tickersWithNames = File.ReadAllText(@"C:\temp\TickerToName.txt");
+            }
+
+            List<Holding> holdings = FilesManager.ParseCsvToObject<Holding>(holdingsData);
+            List<TickerNameSystem> tickerNameSystems = FilesManager.ParseCsvToObject<TickerNameSystem>(tickersWithNames, ' ', StringSplitOptions.RemoveEmptyEntries);
+
+            string lookingForTicker = "PKN";    //For working check
+            string lookingForName = "PKNORLEN";     //For working check
+
+            Console.WriteLine($"I'm looking for ticker: \"{lookingForTicker}\".");
+            Holding holding = holdings.Find(h => h.Ticker == lookingForTicker);
+            if (holding == null)
+            {
+                Console.WriteLine("Ticker was not found");
+                return;
+            }
+
+            Console.WriteLine($"Now, holding looks like that: \n{holding} \n\nPress any key to start merging.");
+            Console.ReadKey();
 
             FilesManager filesManager = new FilesManager("<TICKER>");
             filesManager.MergeData(holdings, tickerNameSystems);
 
             holdings.RemoveAll(h => h.Name == null);
 
-            Holding holding = holdings.Find(h => h.Name == "PKNORLEN");
+            Console.WriteLine($"Now I'm looking for name: \"{lookingForName}\" instead of ticker: \"{lookingForTicker}\".");
+            Holding newHolding = holdings.Find(h => h.Name == lookingForName);
+            if (newHolding == null)
+            {
+                Console.WriteLine("Holding by this name, was not found");
+            }
+            else
+            {
+                Console.WriteLine($"\n\nAfter merging with ticker , holding looks like that: \n{newHolding}");
+            }
 
-            Console.ReadKey();*/
+            Console.WriteLine("Press any key to continue. (You can set breakpoint here if you want to look at full merging result).");
+            Console.ReadKey();
+        }
 
-
-            Console.WriteLine("Hello World!");
+        // Stooq store archived data divided by COMPANY but not divided by date.
+        /// <summary>
+        /// Gets every "COMPANY" file and creates files "divided by date"
+        /// </summary>
+        private static void GenerateCSVFileByDate()
+        {
             string path = @"C:\temp\stocks";
             string[] fileInfos = Directory.GetFiles(path);
 
@@ -60,8 +132,6 @@ namespace CSVParser.Example
                         holdingDictionary.Add(holding.Date, newHoldingList);
                     }
                 }
-
-                //if (i == 50) break;
             }
 
             int dicLength = holdingDictionary.Count;

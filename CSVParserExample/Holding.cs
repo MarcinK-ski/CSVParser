@@ -39,9 +39,13 @@ namespace CSVParser.Example
         [ParserAttributes("<OPENINT>")]
         public int Openint { get; set; }
 
-
         public Holding()
         {
+        }
+
+        public override string ToString()
+        {
+            return $"Name: {Name ?? "null"}\nTicker: {Ticker}\nPer: {Per}\nDate: {Date}\nTime: {Time}\nOpen: {Open}\nHigh: {High}\netc.";
         }
     }
 }

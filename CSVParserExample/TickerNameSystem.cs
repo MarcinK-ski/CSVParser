@@ -7,5 +7,10 @@
 
         [ParserAttributes("<TICKER>")]
         public string Ticker { get; set; }
+
+        public override string ToString()
+        {
+            return $"TickerNameSystem: T: {Ticker} - N: {Name}.";
+        }
     }
 }
