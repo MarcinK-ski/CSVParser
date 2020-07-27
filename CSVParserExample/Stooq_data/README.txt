@@ -1,0 +1,1 @@
+﻿Źródło danych: Stooq.pl (https://stooq.pl/)
